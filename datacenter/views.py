@@ -1,5 +1,6 @@
 import email
 import token
+from django.http import JsonResponse
 from tokenize import Token
 from urllib import response
 from rest_framework.views import APIView
@@ -40,10 +41,19 @@ class LoginView(APIView):
         user = AgencyRegister.objects.filter(email=email).first()
 
         if user is None:
-            raise AuthenticationFailed('User not found!')
+            data = {
+                'statusCode' : 1000,
+                'errorMsg' : 'USER_NOT_FOUND'
+            }
+            return JsonResponse(data, safe=False)
 
         if not user.check_password(password):
-            raise AuthenticationFailed('Incorrect password!')
+            data = {
+                'statusCode' : 1000,
+                'errorMsg' : 'PASSWORD_INVALID'
+            }
+            return JsonResponse(data, safe=False)
+            
 
         payload = {
             'userID': user.userID,
@@ -55,10 +65,12 @@ class LoginView(APIView):
         token = jwt.encode(payload, 'secret', algorithm='HS256')
 
         response = Response()
-
         response.set_cookie(key='jwt', value=token, httponly=True)
         response.data = {
-            'jwt': token
+            'statusCode' : 0,
+            'data' : {
+                'jwt': token
+            }
         }
         return response
 
