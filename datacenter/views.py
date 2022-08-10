@@ -45,14 +45,14 @@ class LoginView(APIView):
                 'statusCode' : 1000,
                 'errorMsg' : 'USER_NOT_FOUND'
             }
-            return JsonResponse(data, safe=False)
+            return JsonResponse(data, safe=False, status=403)
 
         if not user.check_password(password):
             data = {
                 'statusCode' : 1000,
                 'errorMsg' : 'PASSWORD_INVALID'
             }
-            return JsonResponse(data, safe=False)
+            return JsonResponse(data, safe=False, status=403)
             
 
         payload = {
