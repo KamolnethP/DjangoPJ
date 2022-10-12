@@ -1,7 +1,7 @@
 from dataclasses import field, fields
 from pyexpat import model
 from rest_framework import serializers
-from .models import AgencyRegister,Request
+from .models import AgencyRegister,Request,Metadata,DataSetGroup,MetadataGroup,Province
 
 class DatacenterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,3 +26,26 @@ class RequestSerializer(serializers.ModelSerializer):
         model = Request
         fields = "__all__"
     
+class FileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Metadata 
+        fields = "__all__"
+
+
+class ProvinceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Province
+        fields = ['code','name_th','name_en']
+
+
+class DataSetGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DataSetGroup 
+        fields = "__all__"
+
+
+class MetadataGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MetadataGroup 
+        fields = "__all__"
+

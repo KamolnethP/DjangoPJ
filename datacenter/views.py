@@ -6,9 +6,13 @@ from urllib import response
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .serializers import DatacenterSerializer, RequestSerializer
-from .models import AgencyRegister
+from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer,ProvinceSerializer,DataSetGroupSerializer,MetadataGroupSerializer
+from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup
 import jwt, datetime
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import status , viewsets
+from drf_multiple_model.views import ObjectMultipleModelAPIView
+
 
 def checktoken(token):
 
@@ -95,6 +99,7 @@ class LogoutView(APIView):
         }
         return response
 
+
 class RequestView(APIView):
     def post(self, request):
         token = request.COOKIES.get('jwt')
@@ -105,3 +110,24 @@ class RequestView(APIView):
         serializer.save()
         return Response(serializer.data)
 
+
+class FileView(APIView):
+  parser_classes = (MultiPartParser, FormParser)
+  def post(self, request, *args, **kwargs):
+    file_serializer = FileSerializer(data=request.data)
+    if file_serializer.is_valid():
+      file_serializer.save()
+      return Response(file_serializer.data, status=status.HTTP_201_CREATED)
+    else:
+      return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def dropdownList(request):
+    if request.method == "GET":
+        province = Province.objects.all()
+        dataSetGroup = DataSetGroup.objects.all()
+        metadataGroup = MetadataGroup.objects.all()
+        listprovicne = list(province.values())
+        listdataSetGroup = list(dataSetGroup.values())
+        listmetadataGroup = list(metadataGroup.values())
+        return JsonResponse({"province":listprovicne, "dataSetGroup":listdataSetGroup, "metadataGroup":listmetadataGroup},safe=False)
