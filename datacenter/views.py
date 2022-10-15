@@ -1,17 +1,16 @@
-import email
-import token
 from django.http import JsonResponse
-from tokenize import Token
-from urllib import response
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer,ProvinceSerializer,DataSetGroupSerializer,MetadataGroupSerializer
-from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup
+from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer
+from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata
 import jwt, datetime
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework import status , viewsets
-from drf_multiple_model.views import ObjectMultipleModelAPIView
+from .document.document import MetadataDocument
+from rest_framework import status
+from django.views.decorators.csrf import csrf_exempt
+import json
+from django.core import serializers
 
 
 def checktoken(token):
@@ -116,8 +115,12 @@ class FileView(APIView):
   def post(self, request, *args, **kwargs):
     file_serializer = FileSerializer(data=request.data)
     if file_serializer.is_valid():
-      file_serializer.save()
-      return Response(file_serializer.data, status=status.HTTP_201_CREATED)
+        file_serializer.save()
+        s = MetadataDocument.search().filter("term", fileName ="pm2.5")
+        for hit in s :
+            print(hit.D_PROVINCE)
+        
+        return Response(file_serializer.data, status=status.HTTP_201_CREATED)
     else:
       return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -131,3 +134,45 @@ def dropdownList(request):
         listdataSetGroup = list(dataSetGroup.values())
         listmetadataGroup = list(metadataGroup.values())
         return JsonResponse({"province":listprovicne, "dataSetGroup":listdataSetGroup, "metadataGroup":listmetadataGroup},safe=False)
+
+@csrf_exempt
+def searchFile(request):
+    if request.method == "POST":
+        mydata = json.loads(request.body)
+        keyWord = mydata['keyWord']
+        filterPovince = mydata['filterPovince']
+        filterMetadataGroup = mydata['filterMetadataGroup']
+        filterDataSetGroup = mydata['filterDataSetGroup']
+        s = MetadataDocument.search().filter("term", fileName =keyWord)
+        listIdMetadata = []
+        for hit in s:
+            listIdMetadata.append(int(hit.D_MetadataID))
+        sql = "SELECT * FROM datacenter_metadata WHERE 1"
+        if len(listIdMetadata) > 0 :
+            sql += " AND D_MetadataID in %s"
+        if filterPovince:
+            sql += " AND D_PROVINCE = " + str(filterPovince)
+        if filterMetadataGroup:
+            sql += " AND D_TypeID = " + str(filterMetadataGroup)
+        if filterDataSetGroup:
+            sql += " AND D_GroupID = " + str(filterDataSetGroup)
+
+        dataResp = []
+        if len(listIdMetadata) > 0 :
+            listData = Metadata.objects.raw(sql, params=[listIdMetadata])
+            dataResp = listData
+        else:
+            listData = Metadata.objects.raw(sql)
+            dataResp = listData
+
+        context = serializers.serialize('json',dataResp)
+        dataDict = json.loads(context)
+        return JsonResponse({"data": dataDict},safe=False)
+        
+       
+                
+
+
+
+
+

@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import RegisterView, LoginView, UserView, LogoutView, RequestView, FileView , dropdownList
+from .views import RegisterView, LoginView, UserView, LogoutView, RequestView, FileView , dropdownList, searchFile
 
 urlpatterns = [
     path('register', RegisterView.as_view()),
@@ -9,4 +9,5 @@ urlpatterns = [
     path('request', RequestView.as_view()),
     path('upload', FileView.as_view(), name='file-upload'),
     path('dropdownlist', dropdownList),
+    path('searchfile', searchFile)
 ]

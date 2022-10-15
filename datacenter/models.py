@@ -18,6 +18,7 @@ class AgencyRegister(AbstractUser):
 
 class Metadata(models.Model):
     D_TypeID = models.CharField(max_length=3)
+    D_GroupID = models.CharField(max_length=3, null=True)
     D_MetadataID = models.AutoField(primary_key=True)
     D_DATE = models.DateField(auto_now_add=True)
     D_TIME = models.TimeField(auto_now_add=True)

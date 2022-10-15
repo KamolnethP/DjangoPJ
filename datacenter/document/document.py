@@ -1,6 +1,6 @@
 from django_elasticsearch_dsl import Document
 from django_elasticsearch_dsl.registries import registry
-from models import Metadata
+from ..models import Metadata
 
 @registry.register_document
 class MetadataDocument(Document):
@@ -13,10 +13,10 @@ class MetadataDocument(Document):
     class Django:
          model = Metadata
          fields = [
-             'D_TypeID',
-             'D_MetadataID',
-             'D_DATE',
-             'D_TIME',
-             'D_PROVINCE',
-             'fileName',
+            'D_TypeID',
+            'D_GroupID',
+            'D_DATE',
+            'fileName',
+            'D_MetadataID',
+            'D_PROVINCE',
          ]
