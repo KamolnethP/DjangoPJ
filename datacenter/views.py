@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse,HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -11,6 +11,7 @@ from rest_framework import status
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core import serializers
+from wsgiref.util import FileWrapper
 
 
 def checktoken(token):
@@ -168,6 +169,17 @@ def searchFile(request):
         context = serializers.serialize('json',dataResp)
         dataDict = json.loads(context)
         return JsonResponse({"data": dataDict},safe=False)
+
+@csrf_exempt
+def downloadFile(request):
+    if request.method == "POST":
+        mydata = json.loads(request.body)
+        filename = mydata['filename']
+        filePath = mydata['filePath']
+        FilePointer = open(filePath, "rb")
+        response = HttpResponse(FileWrapper(FilePointer), content_type = 'application/vnd.ms-excel')
+        response['Content-Disposition'] = 'attachment; filename="%s"'%filename
+        return response
         
        
                 

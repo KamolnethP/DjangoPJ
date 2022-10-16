@@ -27,7 +27,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'drf_multiple_model',
     'corsheaders',
     'datacenter',
     'django_elasticsearch_dsl',
@@ -74,11 +73,11 @@ WSGI_APPLICATION = 'Airpollution2.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'django_test',
+        'NAME': 'django',
         'USER': 'root',  
         'PASSWORD': '261041',  
         'HOST': '127.0.0.1',  
-        'PORT': '3307',
+        'PORT': '3306',
         
         
     }
