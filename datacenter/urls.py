@@ -7,7 +7,7 @@ urlpatterns = [
     path('user', UserView.as_view()),
     path('logout', LogoutView.as_view()),
     path('request', RequestView.as_view()),
-    path('upload', FileView.as_view(), name='file-upload'),
+    path('upload', FileView.as_view({'post': 'create'}), name='file-upload'),
     path('dropdownlist', dropdownList),
     path('searchfile', searchFile),
     path('downloadFile', downloadFile),

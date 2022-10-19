@@ -7,7 +7,7 @@ from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata
 import jwt, datetime
 from rest_framework.parsers import MultiPartParser, FormParser
 from .document.document import MetadataDocument
-from rest_framework import status
+from rest_framework import status,viewsets
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core import serializers
@@ -111,19 +111,29 @@ class RequestView(APIView):
         return Response(serializer.data)
 
 
-class FileView(APIView):
-  parser_classes = (MultiPartParser, FormParser)
-  def post(self, request, *args, **kwargs):
-    file_serializer = FileSerializer(data=request.data)
-    if file_serializer.is_valid():
-        file_serializer.save()
-        s = MetadataDocument.search().filter("term", fileName ="pm2.5")
-        for hit in s :
-            print(hit.D_PROVINCE)
-        
-        return Response(file_serializer.data, status=status.HTTP_201_CREATED)
-    else:
-      return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class FileView(viewsets.ModelViewSet):
+    parser_classes = (MultiPartParser, FormParser)
+    queryset = Metadata.objects.all()
+    serializer_class = FileSerializer
+    def create(self, request):
+        files = request.FILES.getlist('files', None)
+        data = {
+            "metadataGroupId" : request.POST['metadataGroupId'],
+            "dataSetGroupId" : request.POST.get('dataSetGroupId', None),
+            "fileName" : request.POST['fileName'],
+            "provinceId" : request.POST['provinceId'],
+            "dataName" : request.POST['dataName'],
+            "description" : request.POST['description'],
+        }
+        _serializer = self.serializer_class(data=data,context={'files': files, 'data': data})
+        if _serializer.is_valid():
+            _serializer.save()
+            s = MetadataDocument.search().filter("term", description ="pm2.5")
+            for hit in s :
+                print(hit.fileName)
+            return Response(data=_serializer.data, status=status.HTTP_201_CREATED)  
+        else:
+            return Response(data=_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 def dropdownList(request):
@@ -177,7 +187,7 @@ def downloadFile(request):
         filename = mydata['filename']
         filePath = mydata['filePath']
         FilePointer = open(filePath, "rb")
-        response = HttpResponse(FileWrapper(FilePointer), content_type = 'application/vnd.ms-excel')
+        response = HttpResponse(FileWrapper(FilePointer), content_type = 'whatever')
         response['Content-Disposition'] = 'attachment; filename="%s"'%filename
         return response
         

@@ -1,7 +1,8 @@
 from dataclasses import field, fields
 from pyexpat import model
 from rest_framework import serializers
-from .models import AgencyRegister,Request,Metadata,DataSetGroup,MetadataGroup,Province
+from .models import AgencyRegister,File,Request,Metadata,DataSetGroup,MetadataGroup,Province
+from django.utils import encoding
 
 class DatacenterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,10 +27,28 @@ class RequestSerializer(serializers.ModelSerializer):
         model = Request
         fields = "__all__"
     
-class FileSerializer(serializers.ModelSerializer):
+class FileSerializer(serializers.Serializer):
+    def create(self, validated_data):
+        files = self.context['files']
+        data = self.context['data']
+        print("==========")
+        print(data)
+        dataName = encoding.smart_str(data['dataName'],encoding='utf-8', strings_only=False, errors='strict')
+        metadata = Metadata.objects.create( 
+            metadataGroupId=data['metadataGroupId'],
+            dataSetGroupId=data['dataSetGroupId'],
+            fileName=data['fileName'],
+            provinceId=data['provinceId'],
+            dataName=dataName,
+            description=data['description']
+         ,**validated_data)
+        for file in files:
+            File.objects.create( metadata=metadata ,file=file)
+        return metadata
+
     class Meta:
-        model = Metadata 
-        fields = "__all__"
+        model = Metadata
+        fields = '__all__'
 
 
 class ProvinceSerializer(serializers.ModelSerializer):

@@ -73,11 +73,14 @@ WSGI_APPLICATION = 'Airpollution2.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'django',
+        'NAME': 'django_test',
         'USER': 'root',  
         'PASSWORD': '261041',  
         'HOST': '127.0.0.1',  
-        'PORT': '3306',
+        'PORT': '3307',
+        'OPTIONS': {
+            'charset': 'utf8mb4'  # This is the important line
+        }
         
         
     }

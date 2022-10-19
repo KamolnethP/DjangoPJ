@@ -13,10 +13,11 @@ class MetadataDocument(Document):
     class Django:
          model = Metadata
          fields = [
-            'D_TypeID',
-            'D_GroupID',
-            'D_DATE',
+            'metadataGroupId',
+            'dataSetGroupId',
             'fileName',
-            'D_MetadataID',
-            'D_PROVINCE',
+            'provinceId',
+            'timestamp',
+            'dataName',
+            'description',
          ]

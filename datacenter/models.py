@@ -13,28 +13,34 @@ class AgencyRegister(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
-
-
-
 class Metadata(models.Model):
-    D_TypeID = models.CharField(max_length=3)
-    D_GroupID = models.CharField(max_length=3, null=True)
-    D_MetadataID = models.AutoField(primary_key=True)
-    D_DATE = models.DateField(auto_now_add=True)
-    D_TIME = models.TimeField(auto_now_add=True)
-    D_PROVINCE = models.IntegerField()
+    metadataGroupId = models.CharField(max_length=3)
+    dataSetGroupId = models.CharField(max_length=3, null=True)
+    metadataId = models.AutoField(primary_key=True)
+    updateDate = models.DateField(auto_now_add=True)
+    updateTime = models.TimeField(auto_now_add=True)
+    provinceId = models.IntegerField()
     fileName = models.CharField(max_length=255)
-    file = models.FileField(blank=False, null=False)
     timestamp = models.DateTimeField(auto_now_add=True)
+    dataName = models.CharField(max_length=255, null=True)
+    description = models.TextField(null=True)
+    acency = models.ImageField()
+
+
+    def __str__(self):
+        return f"{self.dataname} {self.__all__}"
+
+class File(models.Model):
+    metadata = models.ForeignKey(Metadata, related_name="file", on_delete=models.CASCADE)
+    file = models.FileField(blank=False, null=False)
 
     def __str__(self):
         return f"{self.dataname} {self.__all__}"
 
 
-
 class MetadataGroup(models.Model):
-    typeID = models.AutoField(primary_key=True)
-    typeName = models.CharField(max_length=100) 
+    metadataGroupId = models.AutoField(primary_key=True)
+    metadataGroupName = models.CharField(max_length=100) 
 
     def __str__(self):
         return f"{self.dataname} {self.groupID}"
@@ -42,8 +48,8 @@ class MetadataGroup(models.Model):
 
 
 class DataSetGroup(models.Model):
-    groupID = models.AutoField(primary_key=True)
-    groupName = models.CharField(max_length=100) 
+    dataSetGroupId = models.AutoField(primary_key=True)
+    dataSetGroupName = models.CharField(max_length=100) 
 
     def __str__(self):
         return f"{self.dataname} {self.groupID}"
@@ -53,7 +59,6 @@ class DataSetGroup(models.Model):
 class AgencyDataDetail(models.Model):
     data_resource = models.CharField(max_length=255)
     dataID = models.AutoField(primary_key=True)
-    access_level = models.CharField(max_length=10)
     data_type = models.CharField(max_length=100)
     dataname = models.CharField(max_length=255)
     data_format = models.CharField(max_length=10)
