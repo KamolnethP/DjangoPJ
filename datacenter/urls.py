@@ -1,5 +1,16 @@
 from django.urls import path, include
-from .views import RegisterView, LoginView, UserView, LogoutView, RequestView, FileView , dropdownList, searchFile,downloadFile
+from .views import (RegisterView, 
+                    LoginView, 
+                    UserView, 
+                    LogoutView, 
+                    RequestView, 
+                    FileView , 
+                    dropdownList, 
+                    searchFile,
+                    downloadFile,
+                    GetMetaDataView,
+                    GetFileNameByMetaDataIdView
+                    )
 
 urlpatterns = [
     path('register', RegisterView.as_view()),
@@ -7,6 +18,8 @@ urlpatterns = [
     path('user', UserView.as_view()),
     path('logout', LogoutView.as_view()),
     path('request', RequestView.as_view()),
+    path('getMetaDataView', GetMetaDataView.as_view()),
+    path('getFileNameByMetaDataIdView', GetFileNameByMetaDataIdView.as_view()),
     path('upload', FileView.as_view({'post': 'create'}), name='file-upload'),
     path('dropdownlist', dropdownList),
     path('searchfile', searchFile),

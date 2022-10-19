@@ -2,8 +2,8 @@ from django.http import JsonResponse,HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
-from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer
-from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata
+from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer,MetaDataSerializer
+from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata,File
 import jwt, datetime
 from rest_framework.parsers import MultiPartParser, FormParser
 from .document.document import MetadataDocument
@@ -124,16 +124,34 @@ class FileView(viewsets.ModelViewSet):
             "provinceId" : request.POST['provinceId'],
             "dataName" : request.POST['dataName'],
             "description" : request.POST['description'],
+            "agencyId" : request.POST['agencyId']
         }
         _serializer = self.serializer_class(data=data,context={'files': files, 'data': data})
         if _serializer.is_valid():
             _serializer.save()
-            s = MetadataDocument.search().filter("term", description ="pm2.5")
-            for hit in s :
-                print(hit.fileName)
             return Response(data=_serializer.data, status=status.HTTP_201_CREATED)  
         else:
             return Response(data=_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class GetMetaDataView(APIView):
+    def post(self, request):
+        token = request.COOKIES.get('jwt')
+        payload = checktoken(token)
+        agencyId = request.data['agencyId']
+
+        metaData = Metadata.objects.filter(agencyId=agencyId)
+        serializer = MetaDataSerializer(metaData, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+class GetFileNameByMetaDataIdView(APIView):
+    def post(self, request):
+        token = request.COOKIES.get('jwt')
+        payload = checktoken(token)
+        metaDataId = request.data['metaDataId']
+
+        files = File.objects.filter(metadata=metaDataId).values()
+        fileResp = list(files)
+        return Response(data={"files":fileResp}, status=status.HTTP_200_OK)
 
 
 def dropdownList(request):
@@ -184,11 +202,12 @@ def searchFile(request):
 def downloadFile(request):
     if request.method == "POST":
         mydata = json.loads(request.body)
-        filename = mydata['filename']
         filePath = mydata['filePath']
-        FilePointer = open(filePath, "rb")
+        path = "./media/" + filePath
+        print(path)
+        FilePointer = open(path, "rb")
         response = HttpResponse(FileWrapper(FilePointer), content_type = 'whatever')
-        response['Content-Disposition'] = 'attachment; filename="%s"'%filename
+        response['Content-Disposition'] = 'attachment; filename="%s"'%filePath
         return response
         
        

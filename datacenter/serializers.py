@@ -7,7 +7,7 @@ from django.utils import encoding
 class DatacenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgencyRegister
-        fields = ['agency', 'first_name', 'last_name', 'email', 'username', 'password', 'userID']
+        fields = ['agencyId', 'first_name', 'last_name', 'email', 'username', 'password', 'userID']
         extra_kwargs = {
             'password': {'write_only': True}
         }
@@ -40,16 +40,21 @@ class FileSerializer(serializers.Serializer):
             fileName=data['fileName'],
             provinceId=data['provinceId'],
             dataName=dataName,
-            description=data['description']
+            description=data['description'],
+            agencyId=data['agencyId']
          ,**validated_data)
         for file in files:
-            File.objects.create( metadata=metadata ,file=file)
+            File.objects.create( metadata=metadata ,file=file, fileName=data['fileName'])
         return metadata
 
     class Meta:
-        model = Metadata
+        model = File
         fields = '__all__'
 
+class MetaDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Metadata
+        fields = '__all__'
 
 class ProvinceSerializer(serializers.ModelSerializer):
     class Meta:

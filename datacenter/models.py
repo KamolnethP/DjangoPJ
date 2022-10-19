@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 
 
 class AgencyRegister(AbstractUser):
-    agency = models.CharField(max_length=255)
+    agencyId = models.IntegerField(null=True)
     email = models.CharField(max_length=255, unique=True)
     username = None
     password = models.CharField(max_length=255)
@@ -12,6 +12,13 @@ class AgencyRegister(AbstractUser):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+
+class Agency(models.Model):
+    agencyId = models.AutoField(primary_key=True)
+    agencyName = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.__all__
 
 class Metadata(models.Model):
     metadataGroupId = models.CharField(max_length=3)
@@ -24,18 +31,18 @@ class Metadata(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     dataName = models.CharField(max_length=255, null=True)
     description = models.TextField(null=True)
-    acency = models.ImageField()
-
+    agencyId = models.IntegerField(null=True)
 
     def __str__(self):
-        return f"{self.dataname} {self.__all__}"
+        return self.__all__
 
 class File(models.Model):
     metadata = models.ForeignKey(Metadata, related_name="file", on_delete=models.CASCADE)
     file = models.FileField(blank=False, null=False)
+    fileName = models.CharField(null=True, max_length=255)
 
     def __str__(self):
-        return f"{self.dataname} {self.__all__}"
+        return self.__all__
 
 
 class MetadataGroup(models.Model):
@@ -43,7 +50,7 @@ class MetadataGroup(models.Model):
     metadataGroupName = models.CharField(max_length=100) 
 
     def __str__(self):
-        return f"{self.dataname} {self.groupID}"
+        return self.__all__
 
 
 
@@ -52,7 +59,7 @@ class DataSetGroup(models.Model):
     dataSetGroupName = models.CharField(max_length=100) 
 
     def __str__(self):
-        return f"{self.dataname} {self.groupID}"
+        return self.__all__
 
 
 
@@ -67,7 +74,7 @@ class AgencyDataDetail(models.Model):
     updated_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.dataname} {self.dataID}"
+        return self.__all__
 
 
 
@@ -83,7 +90,7 @@ class Request(models.Model):
     
 
     def __str__(self):
-        return f"{self.dataname} {self.requestID}"
+        return self.__all__
 
 
 
@@ -94,7 +101,7 @@ class RequestDetail(models.Model):
     detailID = models.AutoField(primary_key=True)
 
     def __str__(self):
-        return f"{self.dataname} {self.detailID}"
+        return self.__all__
 
 
 
@@ -108,7 +115,7 @@ class RequestReturn(models.Model):
     id = models.AutoField(primary_key=True)
 
     def __str__(self):
-        return f"{self.dataname} {self.dataName}"
+        return self.__all__
 
 
 
@@ -118,6 +125,9 @@ class Province(models.Model):
     name_th = models.CharField(max_length=150)
     name_en = models.CharField(max_length=150)
     geography_id = models.IntegerField()
+
+    def __str__(self):
+        return self.__all__
 
 
 
