@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core import serializers
 from wsgiref.util import FileWrapper
+import os
 
 
 def checktoken(token):
@@ -117,21 +118,82 @@ class FileView(viewsets.ModelViewSet):
     serializer_class = FileSerializer
     def create(self, request):
         files = request.FILES.getlist('files', None)
-        data = {
-            "metadataGroupId" : request.POST['metadataGroupId'],
-            "dataSetGroupId" : request.POST.get('dataSetGroupId', None),
-            "fileName" : request.POST['fileName'],
-            "provinceId" : request.POST['provinceId'],
-            "dataName" : request.POST['dataName'],
-            "description" : request.POST['description'],
-            "agencyId" : request.POST['agencyId']
-        }
-        _serializer = self.serializer_class(data=data,context={'files': files, 'data': data})
-        if _serializer.is_valid():
-            _serializer.save()
-            return Response(data=_serializer.data, status=status.HTTP_201_CREATED)  
-        else:
-            return Response(data=_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        metadata = Metadata.objects.create( 
+            metadataGroupId=request.POST['metadataGroupId'],
+            dataSetGroupId=request.POST['dataSetGroupId'],
+            fileName=request.POST['fileName'],
+            provinceId=request.POST['provinceId'],
+            dataName=request.POST['dataName'],
+            description=request.POST['description'],
+            agencyId=request.POST['agencyId'])
+        for file in files:
+            File.objects.create( metadata=metadata ,file=file, fileName=request.POST['fileName'])
+        return Response(status=status.HTTP_201_CREATED)
+
+
+class UploadNewFileView(APIView):
+    parser_classes = (MultiPartParser, FormParser)
+    def post(self, request):
+        files = request.FILES.getlist('files', None)
+        metadataId = request.data['metadataId']
+        metaData = Metadata.objects.filter(metadataId=metadataId).first()
+
+        for file in files:
+            File.objects.create( metadata=metaData ,file=file, fileName=request.data['fileName'])
+        return Response(status=status.HTTP_201_CREATED)
+
+class DeleteFileView(APIView):
+    def post(self, request):
+        File.objects.filter(id=request.data['id']).delete()
+        path = "./media/" + request.data['file']
+        if os.path.exists(path):
+            os.remove(path)
+        return Response(status=status.HTTP_200_OK)
+
+class DeleteMetaData(APIView):
+    def post(self,request):
+        metaDataId = request.data['metadataId']
+        Metadata.objects.filter(metadataId=metaDataId).delete()
+        obj = File.objects.filter(metadata_id=metaDataId).all()
+        listFileName = []
+        for o in obj:
+            listFileName.append("./media/" +o.file)
+
+        File.objects.filter(metadata_id=metaDataId).delete()
+        for fileName in listFileName:
+            if os.path.exists(fileName):
+                os.remove(fileName)
+        return Response(status=status.HTTP_200_OK)
+
+
+        
+
+
+class UpdataMetaDataView(APIView):
+    def post(self, request):
+        try:
+            obj = Metadata.objects.get(metadataId=request.data['metadataId'])
+            obj.metadataGroupId = request.data['metadataGroupId']
+            obj.dataSetGroupId = request.data['dataSetGroupId']
+            obj.fileName = request.data['fileName']
+            obj.provinceId = request.data['provinceId']
+            obj.dataName = request.data['dataName']
+            obj.description = request.data['description']
+            obj.agencyId = request.data['agencyId']
+            obj.save()
+        except Metadata.DoesNotExist:
+           metadata = Metadata.objects.create( 
+            metadataGroupId=request.POST['metadataGroupId'],
+            dataSetGroupId=request.POST['dataSetGroupId'],
+            fileName=request.POST['fileName'],
+            provinceId=request.POST['provinceId'],
+            dataName=request.POST['dataName'],
+            description=request.POST['description'],
+            agencyId=request.POST['agencyId'])
+        
+        return Response(data={"statusCode":"0000", "Msg":"แก้ไขแล้วนะจ้ะ"}, status=status.HTTP_200_OK)
+
+
 
 class GetMetaDataView(APIView):
     def post(self, request):
@@ -164,39 +226,18 @@ def dropdownList(request):
         listmetadataGroup = list(metadataGroup.values())
         return JsonResponse({"province":listprovicne, "dataSetGroup":listdataSetGroup, "metadataGroup":listmetadataGroup},safe=False)
 
-@csrf_exempt
-def searchFile(request):
-    if request.method == "POST":
-        mydata = json.loads(request.body)
-        keyWord = mydata['keyWord']
-        filterPovince = mydata['filterPovince']
-        filterMetadataGroup = mydata['filterMetadataGroup']
-        filterDataSetGroup = mydata['filterDataSetGroup']
+
+class SearchFile(APIView):
+    def post(self, request):
+        keyWord = request.data['keyWord']
         s = MetadataDocument.search().filter("term", fileName =keyWord)
         listIdMetadata = []
         for hit in s:
-            listIdMetadata.append(int(hit.D_MetadataID))
-        sql = "SELECT * FROM datacenter_metadata WHERE 1"
-        if len(listIdMetadata) > 0 :
-            sql += " AND D_MetadataID in %s"
-        if filterPovince:
-            sql += " AND D_PROVINCE = " + str(filterPovince)
-        if filterMetadataGroup:
-            sql += " AND D_TypeID = " + str(filterMetadataGroup)
-        if filterDataSetGroup:
-            sql += " AND D_GroupID = " + str(filterDataSetGroup)
+            listIdMetadata.append(int(hit.metadataId))
 
-        dataResp = []
-        if len(listIdMetadata) > 0 :
-            listData = Metadata.objects.raw(sql, params=[listIdMetadata])
-            dataResp = listData
-        else:
-            listData = Metadata.objects.raw(sql)
-            dataResp = listData
-
-        context = serializers.serialize('json',dataResp)
-        dataDict = json.loads(context)
-        return JsonResponse({"data": dataDict},safe=False)
+        metaDataList = Metadata.objects.filter(metadataId__in=listIdMetadata).values()
+        metaDataResp = list(metaDataList)
+        return Response(data={"result":metaDataResp}, status=status.HTTP_200_OK)
 
 @csrf_exempt
 def downloadFile(request):

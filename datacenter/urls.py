@@ -6,10 +6,14 @@ from .views import (RegisterView,
                     RequestView, 
                     FileView , 
                     dropdownList, 
-                    searchFile,
+                    SearchFile,
                     downloadFile,
                     GetMetaDataView,
-                    GetFileNameByMetaDataIdView
+                    GetFileNameByMetaDataIdView,
+                    UploadNewFileView,
+                    UpdataMetaDataView,
+                    DeleteFileView,
+                    DeleteMetaData
                     )
 
 urlpatterns = [
@@ -19,9 +23,13 @@ urlpatterns = [
     path('logout', LogoutView.as_view()),
     path('request', RequestView.as_view()),
     path('getMetaDataView', GetMetaDataView.as_view()),
+    path('uploadNewFile', UploadNewFileView.as_view()),
+    path('searchFile', SearchFile.as_view()),
+    path('updataMetaDataView', UpdataMetaDataView.as_view()),
+    path('deleteMetaData', DeleteMetaData.as_view()),
+    path('deleteFile', DeleteFileView.as_view()),
     path('getFileNameByMetaDataIdView', GetFileNameByMetaDataIdView.as_view()),
     path('upload', FileView.as_view({'post': 'create'}), name='file-upload'),
     path('dropdownlist', dropdownList),
-    path('searchfile', searchFile),
     path('downloadFile', downloadFile),
 ]

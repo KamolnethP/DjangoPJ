@@ -20,4 +20,5 @@ class MetadataDocument(Document):
             'timestamp',
             'dataName',
             'description',
+            'metadataId',
          ]
