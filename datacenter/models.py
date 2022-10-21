@@ -8,7 +8,7 @@ class AgencyRegister(AbstractUser):
     email = models.CharField(max_length=255, unique=True)
     username = None
     password = models.CharField(max_length=255)
-    userID = models.AutoField(primary_key=True)
+    userId = models.AutoField(primary_key=True)
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -21,8 +21,8 @@ class Agency(models.Model):
         return self.__all__
 
 class Metadata(models.Model):
-    metadataGroupId = models.CharField(max_length=3)
-    dataSetGroupId = models.CharField(max_length=3, null=True)
+    metadataGroupId = models.IntegerField(max_length=3)
+    dataSetGroupId = models.IntegerField(max_length=3, null=True)
     metadataId = models.AutoField(primary_key=True)
     updateDate = models.DateField(auto_now_add=True)
     updateTime = models.TimeField(auto_now_add=True)
@@ -31,7 +31,7 @@ class Metadata(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     dataName = models.CharField(max_length=255, null=True)
     description = models.TextField(null=True)
-    agencyId = models.IntegerField(null=True)
+    userId = models.IntegerField(null=True)
 
     def __str__(self):
         return self.__all__
@@ -55,7 +55,7 @@ class MetadataGroup(models.Model):
 
 
 class DataSetGroup(models.Model):
-    dataSetGroupId = models.AutoField(primary_key=True)
+    dataSetGroupId = models.IntegerField(primary_key=True)
     dataSetGroupName = models.CharField(max_length=100) 
 
     def __str__(self):
@@ -106,7 +106,7 @@ class RequestDetail(models.Model):
 
 
 class RequestReturn(models.Model):
-    userID = models.CharField(max_length=50)
+    userId = models.CharField(max_length=50)
     agency = models.CharField(max_length=255)
     dataName = models.CharField(max_length=255)
     dataID = models.CharField(max_length=50)

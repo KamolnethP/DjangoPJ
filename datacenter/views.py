@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core import serializers
 from wsgiref.util import FileWrapper
+from elasticsearch_dsl import Q
 import os
 
 
@@ -35,7 +36,7 @@ class RegisterView(APIView):
         serializer = DatacenterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(data={"statusCode":0, "result" : serializer.data})
 
 
 class LoginView(APIView):
@@ -61,7 +62,7 @@ class LoginView(APIView):
             
 
         payload = {
-            'userID': user.userID,
+            'userId': user.userId,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=1440),
             'iat': datetime.datetime.utcnow(),
             'isAdmin': 'False'
@@ -85,10 +86,10 @@ class UserView(APIView):
         token = request.COOKIES.get('jwt')
         payload = checktoken(token)
 
-        user = AgencyRegister.objects.filter(userID=payload['userID']).first()
+        user = AgencyRegister.objects.filter(userId=payload['userId']).first()
         serializer = DatacenterSerializer(user)
 
-        return Response(serializer.data)
+        return Response(data={"statusCode":0, "data" : serializer.data})
 
 
 class LogoutView(APIView):
@@ -96,6 +97,7 @@ class LogoutView(APIView):
         response = Response()
         response.delete_cookie('jwt')
         response.data = {
+            'statusCode' : 0,
             'message': 'success'
         }
         return response
@@ -125,10 +127,10 @@ class FileView(viewsets.ModelViewSet):
             provinceId=request.POST['provinceId'],
             dataName=request.POST['dataName'],
             description=request.POST['description'],
-            agencyId=request.POST['agencyId'])
+            userId=request.POST['userId'])
         for file in files:
             File.objects.create( metadata=metadata ,file=file, fileName=request.POST['fileName'])
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(data= {"statusCode" : 0},status=status.HTTP_201_CREATED)
 
 
 class UploadNewFileView(APIView):
@@ -140,7 +142,7 @@ class UploadNewFileView(APIView):
 
         for file in files:
             File.objects.create( metadata=metaData ,file=file, fileName=request.data['fileName'])
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(data={"statusCode":0},status=status.HTTP_201_CREATED)
 
 class DeleteFileView(APIView):
     def post(self, request):
@@ -148,7 +150,7 @@ class DeleteFileView(APIView):
         path = "./media/" + request.data['file']
         if os.path.exists(path):
             os.remove(path)
-        return Response(status=status.HTTP_200_OK)
+        return Response(data={"statusCode": 0},status=status.HTTP_200_OK)
 
 class DeleteMetaData(APIView):
     def post(self,request):
@@ -163,9 +165,7 @@ class DeleteMetaData(APIView):
         for fileName in listFileName:
             if os.path.exists(fileName):
                 os.remove(fileName)
-        return Response(status=status.HTTP_200_OK)
-
-
+        return Response(data={"statusCode":0},status=status.HTTP_200_OK)
         
 
 
@@ -179,7 +179,7 @@ class UpdataMetaDataView(APIView):
             obj.provinceId = request.data['provinceId']
             obj.dataName = request.data['dataName']
             obj.description = request.data['description']
-            obj.agencyId = request.data['agencyId']
+            obj.userId = request.data['userId']
             obj.save()
         except Metadata.DoesNotExist:
            metadata = Metadata.objects.create( 
@@ -189,31 +189,27 @@ class UpdataMetaDataView(APIView):
             provinceId=request.POST['provinceId'],
             dataName=request.POST['dataName'],
             description=request.POST['description'],
-            agencyId=request.POST['agencyId'])
+            userId=request.POST['userId'])
         
-        return Response(data={"statusCode":"0000", "Msg":"แก้ไขแล้วนะจ้ะ"}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0}, status=status.HTTP_200_OK)
 
 
 
 class GetMetaDataView(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
-        payload = checktoken(token)
-        agencyId = request.data['agencyId']
+        userId = request.data['userId']
 
-        metaData = Metadata.objects.filter(agencyId=agencyId)
+        metaData = Metadata.objects.filter(userId=userId)
         serializer = MetaDataSerializer(metaData, many=True)
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0, "metaData" : serializer.data}, status=status.HTTP_200_OK)
 
 class GetFileNameByMetaDataIdView(APIView):
     def post(self, request):
-        token = request.COOKIES.get('jwt')
-        payload = checktoken(token)
         metaDataId = request.data['metaDataId']
 
         files = File.objects.filter(metadata=metaDataId).values()
         fileResp = list(files)
-        return Response(data={"files":fileResp}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0,"files":fileResp}, status=status.HTTP_200_OK)
 
 
 def dropdownList(request):
@@ -224,20 +220,69 @@ def dropdownList(request):
         listprovicne = list(province.values())
         listdataSetGroup = list(dataSetGroup.values())
         listmetadataGroup = list(metadataGroup.values())
-        return JsonResponse({"province":listprovicne, "dataSetGroup":listdataSetGroup, "metadataGroup":listmetadataGroup},safe=False)
+        return JsonResponse({"statusCode":0,"province":listprovicne, "dataSetGroup":listdataSetGroup, "metadataGroup":listmetadataGroup},safe=False)
+
+
 
 
 class SearchFile(APIView):
     def post(self, request):
         keyWord = request.data['keyWord']
-        s = MetadataDocument.search().filter("term", fileName =keyWord)
-        listIdMetadata = []
-        for hit in s:
-            listIdMetadata.append(int(hit.metadataId))
+        selectDataSetGroup = request.data['selectDataSetGroup']
+        metaDataResult = []
+        if  keyWord and keyWord != "":
+            print("=++++++==============")
+            q = Q(
+                'multi_match',
+            query=keyWord,
+            fields=[
+                'description'
+            ],
+            fuzziness='auto'
+            )
+            search = MetadataDocument.search().query(q)
+            response = search.execute()
 
-        metaDataList = Metadata.objects.filter(metadataId__in=listIdMetadata).values()
-        metaDataResp = list(metaDataList)
-        return Response(data={"result":metaDataResp}, status=status.HTTP_200_OK)
+            listIdMetadata = []
+            for hit in search:
+                listIdMetadata.append(hit.metadataId)
+
+            metaDataList = Metadata.objects.filter(metadataId__in=listIdMetadata).values()
+            metaDataResult = list(metaDataList)
+        else :
+            metaData = Metadata.objects.all().values()
+            metaDataResult = list(metaData)
+        
+        metaDataResp = []
+
+        if selectDataSetGroup != 0:
+            for m in metaDataResult:
+                if selectDataSetGroup == m["dataSetGroupId"]:
+                    metaDataResp.append(m)
+        else :
+            metaDataResp = metaDataResult.copy()
+
+        dictDataSetCount = {
+            1:0,
+            2:0,
+            3:0,
+            4:0,
+            5:0
+        }
+        for resp in metaDataResp:
+            dictDataSetCount[resp["dataSetGroupId"]] += 1
+        
+        dictDataSet = {
+            "logistic":dictDataSetCount[1], 
+            "fire-in-open-area" : dictDataSetCount[2],
+            "industry" : dictDataSetCount[3], 
+            "construct" : dictDataSetCount[4],
+            "pollution" : dictDataSetCount[5],
+        }
+
+
+        return Response(data={"statusCode":0, "metaData" : metaDataResp, "dataSetCount" : dictDataSet}, status=status.HTTP_200_OK)
+
 
 @csrf_exempt
 def downloadFile(request):

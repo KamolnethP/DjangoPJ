@@ -7,7 +7,7 @@ from django.utils import encoding
 class DatacenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgencyRegister
-        fields = ['agencyId', 'first_name', 'last_name', 'email', 'username', 'password', 'userID']
+        fields = ['first_name', 'last_name', 'email', 'username', 'password', 'userId']
         extra_kwargs = {
             'password': {'write_only': True}
         }
