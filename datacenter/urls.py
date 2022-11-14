@@ -6,14 +6,14 @@ from .views import (RegisterView,
                     RequestView, 
                     FileView , 
                     dropdownList, 
-                    SearchFile,
                     downloadFile,
                     GetMetaDataView,
                     GetFileNameByMetaDataIdView,
                     UploadNewFileView,
                     UpdataMetaDataView,
                     DeleteFileView,
-                    DeleteMetaData
+                    DeleteMetaData,
+                    SearchFile
                     )
 
 urlpatterns = [

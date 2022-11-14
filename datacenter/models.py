@@ -21,8 +21,8 @@ class Agency(models.Model):
         return self.__all__
 
 class Metadata(models.Model):
-    metadataGroupId = models.IntegerField(max_length=3)
-    dataSetGroupId = models.IntegerField(max_length=3, null=True)
+    metadataGroupId = models.IntegerField()
+    dataSetGroupId = models.IntegerField(null=True)
     metadataId = models.AutoField(primary_key=True)
     updateDate = models.DateField(auto_now_add=True)
     updateTime = models.TimeField(auto_now_add=True)
@@ -32,6 +32,18 @@ class Metadata(models.Model):
     dataName = models.CharField(max_length=255, null=True)
     description = models.TextField(null=True)
     userId = models.IntegerField(null=True)
+    stopWord = models.TextField(null=True)
+
+    def __str__(self):
+        return self.__all__
+
+class MetaDataMapField(models.Model):
+    id = models.AutoField(primary_key=True)
+    metadataId = models.IntegerField()
+    metadataGroupId = models.IntegerField()
+    fieldNameUser = models.CharField(max_length=255)
+    dataTypeField = models.CharField(max_length=20,null=True)
+    discription = models.TextField(null=True)
 
     def __str__(self):
         return self.__all__

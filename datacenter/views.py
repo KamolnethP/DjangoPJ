@@ -3,18 +3,17 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
 from .serializers import DatacenterSerializer, RequestSerializer,FileSerializer,MetaDataSerializer
-from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata,File
+from .models import AgencyRegister, Province,DataSetGroup,MetadataGroup,Metadata,File,MetaDataMapField
 import jwt, datetime
 from rest_framework.parsers import MultiPartParser, FormParser
-from .document.document import MetadataDocument
 from rest_framework import status,viewsets
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.core import serializers
 from wsgiref.util import FileWrapper
-from elasticsearch_dsl import Q
 import os
-
+from pythainlp.tokenize import word_tokenize
+from pythainlp.corpus import thai_stopwords
 
 def checktoken(token):
 
@@ -227,37 +226,47 @@ def dropdownList(request):
 
 class SearchFile(APIView):
     def post(self, request):
+
+        class ModelSortSearch():
+            def __init__(self,countMap,mateData):
+                self.countMap = countMap
+                self.mateData = mateData
+
         keyWord = request.data['keyWord']
-        selectDataSetGroup = request.data['selectDataSetGroup']
+        selectDataSetGroupId = request.data['selectDataSetGroup']
+        mataDataGroupId = request.data['mataDataGroup']
+        resultMetaDataMapField = MetaDataMapField.objects.filter(metadataGroupId=mataDataGroupId).values()
+        mateDataIdSets = set()
+        for r in resultMetaDataMapField:
+            mateDataIdSets.add(r['metadataId'])
+
+        mateDataIdList = list(mateDataIdSets)
+        mateDataResult = Metadata.objects.filter(metadataId__in=mateDataIdList).values()
+        mateDataList = list(mateDataResult)
+        list_word = word_tokenize(str(keyWord))
+        stopwords = list(thai_stopwords())
+        list_word_not_stopwords = [i for i in list_word if i not in stopwords]
+        allMetaData = {}
+        for m in mateDataList:
+            stopWordList = str(m['stopWord']).split(",")
+            for i in stopWordList:
+                if i in list_word_not_stopwords:
+                    if m['metadataId'] in allMetaData:
+                        allMetaData[m['metadataId']].countMap += 1
+                    else:
+                        allMetaData[m['metadataId']] = ModelSortSearch(1,m)
+
+        allMetaDataList = allMetaData.values()
+        allMetaDataList.sort(key=lambda x: x.countMap, reverse=True)
         metaDataResult = []
-        if  keyWord and keyWord != "":
-            print("=++++++==============")
-            q = Q(
-                'multi_match',
-            query=keyWord,
-            fields=[
-                'description'
-            ],
-            fuzziness='auto'
-            )
-            search = MetadataDocument.search().query(q)
-            response = search.execute()
-
-            listIdMetadata = []
-            for hit in search:
-                listIdMetadata.append(hit.metadataId)
-
-            metaDataList = Metadata.objects.filter(metadataId__in=listIdMetadata).values()
-            metaDataResult = list(metaDataList)
-        else :
-            metaData = Metadata.objects.all().values()
-            metaDataResult = list(metaData)
+        for i in allMetaDataList:
+            metaDataResult.append(i.mateData)
         
         metaDataResp = []
 
-        if selectDataSetGroup != 0:
+        if selectDataSetGroupId != 0:
             for m in metaDataResult:
-                if selectDataSetGroup == m["dataSetGroupId"]:
+                if selectDataSetGroupId == m["dataSetGroupId"]:
                     metaDataResp.append(m)
         else :
             metaDataResp = metaDataResult.copy()

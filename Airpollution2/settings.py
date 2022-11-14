@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'datacenter',
-    'django_elasticsearch_dsl',
    
 ]
 
@@ -105,11 +104,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-ELASTICSEARCH_DSL={
-    'default': {
-        'hosts': 'localhost:9200'
-    },
-}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
