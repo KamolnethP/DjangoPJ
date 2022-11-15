@@ -119,14 +119,35 @@ class FileView(viewsets.ModelViewSet):
     serializer_class = FileSerializer
     def create(self, request):
         files = request.FILES.getlist('files', None)
-        metadata = Metadata.objects.create( 
-            metadataGroupId=request.POST['metadataGroupId'],
+        dataMapId = request.POST.getlist('dataMapId')
+        dataMapUser = request.POST.getlist('dataMapUser')
+        descriptionDataMap = request.POST.getlist('descriptionDataMap')
+        province = Province.objects.filter(code=request.POST['provinceId']).first()
+        word = str(request.POST['description']) + province.name_th
+        list_word = word_tokenize(str(word))
+        stopwords = list(thai_stopwords())
+        list_word_not_stopwords = [i for i in list_word if i not in stopwords and i!=" "]
+        keyWord = ','.join(str(i) for i in list_word_not_stopwords)
+        metadata = Metadata.objects.create(
             dataSetGroupId=request.POST['dataSetGroupId'],
             fileName=request.POST['fileName'],
             provinceId=request.POST['provinceId'],
             dataName=request.POST['dataName'],
             description=request.POST['description'],
-            userId=request.POST['userId'])
+            userId=request.POST['userId'],
+            stopWord=keyWord
+            )
+        
+        x = len(dataMapId)
+
+        for i in range(x):
+            MetaDataMapField.objects.create(
+                metadataId=metadata.metadataId,
+                metadataGroupId=dataMapId[i],
+                fieldNameUser=dataMapUser[i],
+                discription=descriptionDataMap[i]
+            )
+            
         for file in files:
             File.objects.create( metadata=metadata ,file=file, fileName=request.POST['fileName'])
         return Response(data= {"statusCode" : 0},status=status.HTTP_201_CREATED)
@@ -170,25 +191,45 @@ class DeleteMetaData(APIView):
 
 class UpdataMetaDataView(APIView):
     def post(self, request):
+        payload = json.loads(request.body)
+        dataMapId = payload['dataMapId']
+        dataMapUser = payload['dataMapUser']
+        descriptionDataMap = payload['descriptionDataMap']
+        province = Province.objects.filter(code=payload['provinceId']).first()
+        word = str(payload['description']) + province.name_th
+        list_word = word_tokenize(str(word))
+        stopwords = list(thai_stopwords())
+        list_word_not_stopwords = [i for i in list_word if i not in stopwords and i!=" "]
+        keyWord = ','.join(str(i) for i in list_word_not_stopwords)
+        MetaDataMapField.objects.filter(metadataId=payload['metadataId']).delete()
         try:
-            obj = Metadata.objects.get(metadataId=request.data['metadataId'])
-            obj.metadataGroupId = request.data['metadataGroupId']
-            obj.dataSetGroupId = request.data['dataSetGroupId']
-            obj.fileName = request.data['fileName']
-            obj.provinceId = request.data['provinceId']
-            obj.dataName = request.data['dataName']
-            obj.description = request.data['description']
-            obj.userId = request.data['userId']
+            obj = Metadata.objects.get(metadataId=payload['metadataId'])
+            obj.dataSetGroupId = payload['dataSetGroupId']
+            obj.fileName = payload['fileName']
+            obj.provinceId = payload['provinceId']
+            obj.dataName = payload['dataName']
+            obj.description = payload['description']
+            obj.userId = payload['userId']
+            obj.stopWord = keyWord
             obj.save()
         except Metadata.DoesNotExist:
            metadata = Metadata.objects.create( 
-            metadataGroupId=request.POST['metadataGroupId'],
-            dataSetGroupId=request.POST['dataSetGroupId'],
-            fileName=request.POST['fileName'],
-            provinceId=request.POST['provinceId'],
-            dataName=request.POST['dataName'],
-            description=request.POST['description'],
-            userId=request.POST['userId'])
+            dataSetGroupId=payload['dataSetGroupId'],
+            fileName=payload['fileName'],
+            provinceId=payload['provinceId'],
+            dataName=payload['dataName'],
+            description=payload['description'],
+            userId=payload['userId'],
+            stopWord=keyWord)
+        finally:
+            x = len(dataMapId)
+            for i in range(x):
+                MetaDataMapField.objects.create(
+                    metadataId=payload['metadataId'],
+                    metadataGroupId=dataMapId[i],
+                    fieldNameUser=dataMapUser[i],
+                    discription=descriptionDataMap[i]
+                )
         
         return Response(data={"statusCode":0}, status=status.HTTP_200_OK)
 
@@ -235,35 +276,43 @@ class SearchFile(APIView):
         keyWord = request.data['keyWord']
         selectDataSetGroupId = request.data['selectDataSetGroup']
         mataDataGroupId = request.data['mataDataGroup']
-        resultMetaDataMapField = MetaDataMapField.objects.filter(metadataGroupId=mataDataGroupId).values()
+        if mataDataGroupId == 0:
+            resultMetaDataMapField = MetaDataMapField.objects.all()
+        else:
+            resultMetaDataMapField = MetaDataMapField.objects.filter(metadataGroupId=mataDataGroupId)
         mateDataIdSets = set()
         for r in resultMetaDataMapField:
-            mateDataIdSets.add(r['metadataId'])
+            mateDataIdSets.add(r.metadataId)
 
         mateDataIdList = list(mateDataIdSets)
         mateDataResult = Metadata.objects.filter(metadataId__in=mateDataIdList).values()
         mateDataList = list(mateDataResult)
-        list_word = word_tokenize(str(keyWord))
-        stopwords = list(thai_stopwords())
-        list_word_not_stopwords = [i for i in list_word if i not in stopwords]
-        allMetaData = {}
-        for m in mateDataList:
-            stopWordList = str(m['stopWord']).split(",")
-            for i in stopWordList:
-                if i in list_word_not_stopwords:
-                    if m['metadataId'] in allMetaData:
-                        allMetaData[m['metadataId']].countMap += 1
-                    else:
-                        allMetaData[m['metadataId']] = ModelSortSearch(1,m)
-
-        allMetaDataList = allMetaData.values()
-        allMetaDataList.sort(key=lambda x: x.countMap, reverse=True)
         metaDataResult = []
-        for i in allMetaDataList:
-            metaDataResult.append(i.mateData)
+        if keyWord and keyWord != "":
+            list_word = word_tokenize(str(keyWord))
+            stopwords = list(thai_stopwords())
+            list_word_not_stopwords = [i for i in list_word if i not in stopwords]
+            print("list_word_not_stopwords : ")
+            print(list_word_not_stopwords)
+            allMetaData = {}
+            for m in mateDataList:
+                stopWordList = str(m['stopWord']).split(",")
+                for i in stopWordList:
+                    if i in list_word_not_stopwords:
+                        if m['metadataId'] in allMetaData:
+                            allMetaData[m['metadataId']].countMap += 1
+                        else:
+                            allMetaData[m['metadataId']] = ModelSortSearch(1,m)
+
+            allMetaDataList = list(allMetaData.values())
+            allMetaDataList.sort(key=lambda x: x.countMap, reverse=True)
+        
+            for i in allMetaDataList:
+                metaDataResult.append(i.mateData)
+        else:
+            metaDataResult = mateDataList.copy()
         
         metaDataResp = []
-
         if selectDataSetGroupId != 0:
             for m in metaDataResult:
                 if selectDataSetGroupId == m["dataSetGroupId"]:

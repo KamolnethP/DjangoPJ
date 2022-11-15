@@ -21,11 +21,11 @@ class Agency(models.Model):
         return self.__all__
 
 class Metadata(models.Model):
-    metadataGroupId = models.IntegerField()
+    metadataGroupId = models.IntegerField(null=True)
     dataSetGroupId = models.IntegerField(null=True)
     metadataId = models.AutoField(primary_key=True)
-    updateDate = models.DateField(auto_now_add=True)
-    updateTime = models.TimeField(auto_now_add=True)
+    updateDate = models.DateField(auto_now=True)
+    updateTime = models.TimeField(auto_now=True)
     provinceId = models.IntegerField()
     fileName = models.CharField(max_length=255)
     timestamp = models.DateTimeField(auto_now_add=True)
