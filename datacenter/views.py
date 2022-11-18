@@ -119,31 +119,33 @@ class FileView(viewsets.ModelViewSet):
     serializer_class = FileSerializer
     def create(self, request):
         files = request.FILES.getlist('files', None)
-        dataMapId = request.POST.getlist('dataMapId')
+        dataMapName = request.POST.getlist('dataMapId')
         dataMapUser = request.POST.getlist('dataMapUser')
         descriptionDataMap = request.POST.getlist('descriptionDataMap')
-        province = Province.objects.filter(code=request.POST['provinceId']).first()
+        province = Province.objects.filter(name_th=request.POST['provinceId']).first()
         word = str(request.POST['description']) + province.name_th
         list_word = word_tokenize(str(word))
         stopwords = list(thai_stopwords())
         list_word_not_stopwords = [i for i in list_word if i not in stopwords and i!=" "]
         keyWord = ','.join(str(i) for i in list_word_not_stopwords)
+        dataSet = DataSetGroup.objects.filter(dataSetGroupName=request.POST['dataSetGroupId']).first()
         metadata = Metadata.objects.create(
-            dataSetGroupId=request.POST['dataSetGroupId'],
+            dataSetGroupId=dataSet.dataSetGroupId,
             fileName=request.POST['fileName'],
-            provinceId=request.POST['provinceId'],
+            provinceId=province.id,
             dataName=request.POST['dataName'],
             description=request.POST['description'],
             userId=request.POST['userId'],
             stopWord=keyWord
             )
         
-        x = len(dataMapId)
+        x = len(dataMapName)
 
         for i in range(x):
+            m = MetadataGroup.objects.filter(metadataGroupName=dataMapName[i]).first()
             MetaDataMapField.objects.create(
                 metadataId=metadata.metadataId,
-                metadataGroupId=dataMapId[i],
+                metadataGroupId=m.metadataGroupId,
                 fieldNameUser=dataMapUser[i],
                 discription=descriptionDataMap[i]
             )
@@ -195,16 +197,17 @@ class UpdataMetaDataView(APIView):
         dataMapId = payload['dataMapId']
         dataMapUser = payload['dataMapUser']
         descriptionDataMap = payload['descriptionDataMap']
-        province = Province.objects.filter(code=payload['provinceId']).first()
+        province = Province.objects.filter(name_th=payload['provinceId']).first()
         word = str(payload['description']) + province.name_th
         list_word = word_tokenize(str(word))
         stopwords = list(thai_stopwords())
         list_word_not_stopwords = [i for i in list_word if i not in stopwords and i!=" "]
         keyWord = ','.join(str(i) for i in list_word_not_stopwords)
+        dataSet = DataSetGroup.objects.filter(dataSetGroupName=payload['dataSetGroupId']).first()
         MetaDataMapField.objects.filter(metadataId=payload['metadataId']).delete()
         try:
             obj = Metadata.objects.get(metadataId=payload['metadataId'])
-            obj.dataSetGroupId = payload['dataSetGroupId']
+            obj.dataSetGroupId = dataSet.dataSetGroupId
             obj.fileName = payload['fileName']
             obj.provinceId = payload['provinceId']
             obj.dataName = payload['dataName']
@@ -214,7 +217,7 @@ class UpdataMetaDataView(APIView):
             obj.save()
         except Metadata.DoesNotExist:
            metadata = Metadata.objects.create( 
-            dataSetGroupId=payload['dataSetGroupId'],
+            dataSetGroupId=dataSet.dataSetGroupId,
             fileName=payload['fileName'],
             provinceId=payload['provinceId'],
             dataName=payload['dataName'],
@@ -224,9 +227,10 @@ class UpdataMetaDataView(APIView):
         finally:
             x = len(dataMapId)
             for i in range(x):
+                m = MetadataGroup.objects.filter(metadataGroupName=dataMapId[i]).first()
                 MetaDataMapField.objects.create(
                     metadataId=payload['metadataId'],
-                    metadataGroupId=dataMapId[i],
+                    metadataGroupId=m.metadataGroupId,
                     fieldNameUser=dataMapUser[i],
                     discription=descriptionDataMap[i]
                 )
