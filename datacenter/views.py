@@ -197,6 +197,7 @@ class UpdataMetaDataView(APIView):
         dataMapId = payload['dataMapId']
         dataMapUser = payload['dataMapUser']
         descriptionDataMap = payload['descriptionDataMap']
+        print(payload['provinceId'])
         province = Province.objects.filter(name_th=payload['provinceId']).first()
         word = str(payload['description']) + province.name_th
         list_word = word_tokenize(str(word))
@@ -209,7 +210,7 @@ class UpdataMetaDataView(APIView):
             obj = Metadata.objects.get(metadataId=payload['metadataId'])
             obj.dataSetGroupId = dataSet.dataSetGroupId
             obj.fileName = payload['fileName']
-            obj.provinceId = payload['provinceId']
+            obj.provinceId = province.id
             obj.dataName = payload['dataName']
             obj.description = payload['description']
             obj.userId = payload['userId']
@@ -219,7 +220,7 @@ class UpdataMetaDataView(APIView):
            metadata = Metadata.objects.create( 
             dataSetGroupId=dataSet.dataSetGroupId,
             fileName=payload['fileName'],
-            provinceId=payload['provinceId'],
+            provinceId=province.id,
             dataName=payload['dataName'],
             description=payload['description'],
             userId=payload['userId'],
