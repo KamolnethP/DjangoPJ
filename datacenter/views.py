@@ -344,7 +344,7 @@ class SearchFile(APIView):
         }
 
 
-        return Response(data={"statusCode":0,"d" "metaData" : metaDataResp, "dataSetCount" : dictDataSet}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0,"data" : { "metaData" : metaDataResp, "dataSetCount" : dictDataSet}}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
