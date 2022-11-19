@@ -35,7 +35,7 @@ class RegisterView(APIView):
         serializer = DatacenterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(data={"statusCode":0, "result" : serializer.data})
+        return Response(data={"statusCode":0,"data":{"result" : serializer.data}} )
 
 
 class LoginView(APIView):
@@ -246,7 +246,7 @@ class GetMetaDataView(APIView):
 
         metaData = Metadata.objects.filter(userId=userId)
         serializer = MetaDataSerializer(metaData, many=True)
-        return Response(data={"statusCode":0, "metaData" : serializer.data}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0,"data" : {"metaData" : serializer.data}}, status=status.HTTP_200_OK)
 
 class GetFileNameByMetaDataIdView(APIView):
     def post(self, request):
@@ -254,7 +254,7 @@ class GetFileNameByMetaDataIdView(APIView):
 
         files = File.objects.filter(metadata=metaDataId).values()
         fileResp = list(files)
-        return Response(data={"statusCode":0,"files":fileResp}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0,"data":{"files":fileResp}}, status=status.HTTP_200_OK)
 
 
 def dropdownList(request):
@@ -337,14 +337,14 @@ class SearchFile(APIView):
         
         dictDataSet = {
             "logistic":dictDataSetCount[1], 
-            "fire-in-open-area" : dictDataSetCount[2],
+            "fireInOpenArea" : dictDataSetCount[2],
             "industry" : dictDataSetCount[3], 
             "construct" : dictDataSetCount[4],
             "pollution" : dictDataSetCount[5],
         }
 
 
-        return Response(data={"statusCode":0, "metaData" : metaDataResp, "dataSetCount" : dictDataSet}, status=status.HTTP_200_OK)
+        return Response(data={"statusCode":0,"d" "metaData" : metaDataResp, "dataSetCount" : dictDataSet}, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
