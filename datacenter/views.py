@@ -349,9 +349,8 @@ class SearchFile(APIView):
 
 @csrf_exempt
 def downloadFile(request):
-    if request.method == "POST":
-        mydata = json.loads(request.body)
-        filePath = mydata['filePath']
+    if request.method == "GET":
+        filePath = request.GET['filePath']
         path = "./media/" + filePath
         print(path)
         FilePointer = open(path, "rb")
