@@ -280,7 +280,7 @@ class SearchFile(APIView):
 
         keyWord = request.data['keyWord']
         selectDataSetGroupId = request.data['selectDataSetGroup']
-        mataDataGroupId = request.data['mataDataGroup']
+        mataDataGroupId = request.data['metaDataGroup']
         if mataDataGroupId == 0:
             resultMetaDataMapField = MetaDataMapField.objects.all()
         else:
