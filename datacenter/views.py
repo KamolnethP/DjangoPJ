@@ -332,7 +332,7 @@ class SearchFile(APIView):
             4:0,
             5:0
         }
-        for resp in metaDataResp:
+        for resp in metaDataResult:
             dictDataSetCount[resp["dataSetGroupId"]] += 1
         
         dictDataSet = {
