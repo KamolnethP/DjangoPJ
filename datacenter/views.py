@@ -121,7 +121,6 @@ class FileView(viewsets.ModelViewSet):
         files = request.FILES.getlist('files', None)
         dataMapName = request.POST.getlist('dataMapId')
         dataMapUser = request.POST.getlist('dataMapUser')
-        descriptionDataMap = request.POST.getlist('descriptionDataMap')
         province = Province.objects.filter(name_th=request.POST['provinceId']).first()
         word = str(request.POST['description']) + province.name_th
         list_word = word_tokenize(str(word))
@@ -146,8 +145,7 @@ class FileView(viewsets.ModelViewSet):
             MetaDataMapField.objects.create(
                 metadataId=metadata.metadataId,
                 metadataGroupId=m.metadataGroupId,
-                fieldNameUser=dataMapUser[i],
-                discription=descriptionDataMap[i]
+                fieldNameUser=dataMapUser[i]
             )
             
         for file in files:
